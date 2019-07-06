@@ -10,6 +10,7 @@ use Goutte\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Symfony\Component\DomCrawler\Crawler;
 
 class ScrapeProducts extends Command
 {
@@ -68,23 +69,14 @@ class ScrapeProducts extends Command
 
         $crawler = $this->client->request('GET', $url);
 
-        $rootCategoryTitle = $crawler->filter('li.breadcrumbs-catalog-i.active')->text();
-        $rootCategory = Category::firstOrCreate(['title' => $rootCategoryTitle]);
-
-        $categories = $crawler->filter('.filter-active > ul > li> a.filter-active-i-link')
-            ->each(function ($node) use($rootCategory) {
-                return Category::firstOrCreate([
-                    'title' => $node->text(),
-                    'parent_id' => $rootCategory->id
-                ])->id;
-            });
+        $categories =  $this->getCategories($crawler);
 
         //Get pagination pages count
         $count = $crawler->filter('ul[name="paginator"] li')->count();
         //Only < 3 pages
         $pages = $count >= 3 ? 3 : $count;
 
-        $urls = $this->getUrls($crawler, $pages);
+        $urls = $this->getProductUrls($crawler, $pages);
 
         //Create a nice progress bar
         $bar = $this->output->createProgressBar(count($urls));
@@ -136,12 +128,48 @@ class ScrapeProducts extends Command
     }
 
     /**
-     * Get products urls
-     * @param $crawler
+     * @param Crawler $crawler
+     * @return array
+     */
+    private function getCategories(Crawler $crawler)
+    {
+        $rootCategoryTitle = $this->getRootCategoryTitle($crawler);
+
+        $rootCategory = Category::firstOrCreate(['title' => $rootCategoryTitle]);
+
+        return $crawler
+            ->filter('.filter-active > ul > li> a.filter-active-i-link')
+            ->each(function ($node) use ($rootCategory) {
+                return Category::firstOrCreate([
+                    'title' => $node->text(),
+                    'parent_id' => $rootCategory->id
+                ])->id;
+            });
+    }
+
+    /**
+     * @param Crawler $crawler
+     * @return string
+     */
+    private function getRootCategoryTitle(Crawler $crawler)
+    {
+        $breadcrumb = $crawler->filter('li.breadcrumbs-catalog-i')->last();
+
+        $rootCategoryTitle = trim($breadcrumb->text());
+        if ($rootCategoryTitle === 'Підбір за параметрами'){
+            $rootCategoryTitle = trim($breadcrumb->previousAll()->first()->text());
+        }
+
+        return $rootCategoryTitle;
+    }
+
+    /**
+     * Get product urls
+     * @param Crawler $crawler
      * @param int $pages
      * @return array
      */
-    private function getUrls($crawler, $pages = 3)
+    private function getProductUrls(Crawler $crawler, $pages = 3)
     {
         $urls = [];
         for ($i = 0; $i <= $pages; $i++) {
