@@ -20,6 +20,13 @@
                 margin: 0;
             }
 
+            .badge{
+                background: #8c30d1;
+                padding: 5px;
+                border-radius: 10px;
+                color: #fff;
+            }
+
             .full-height {
                 height: 100vh;
             }
@@ -81,17 +88,14 @@
 
             <div class="content">
                 <div class="title m-b-md">
-                    Laravel
+                    For <span class="badge">LinkUp</span> Studio.
                 </div>
 
                 <div class="links">
-                    <a href="https://laravel.com/docs">Docs</a>
-                    <a href="https://laracasts.com">Laracasts</a>
-                    <a href="https://laravel-news.com">News</a>
-                    <a href="https://blog.laravel.com">Blog</a>
-                    <a href="https://nova.laravel.com">Nova</a>
-                    <a href="https://forge.laravel.com">Forge</a>
-                    <a href="https://github.com/laravel/laravel">GitHub</a>
+                    <a href="{{ route('products.index') }}">Products</a>
+                    <a href="{{ route('categories.index') }}">Categories</a>
+                    <a href="{{ route('login') }}">Login</a>
+                    <a href="{{ route('register') }}">Register</a>
                 </div>
             </div>
         </div>
